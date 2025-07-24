@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试转发日志</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #e7f3ff;
+            border-color: #b3d9ff;
+            color: #0c5460;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .secondary {
+            background-color: #008CBA;
+        }
+        .secondary:hover {
+            background-color: #007B9A;
+        }
+        .log-section {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .log-title {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 10px;
+        }
+        .log-item {
+            font-family: monospace;
+            font-size: 12px;
+            margin: 5px 0;
+            padding: 5px;
+            background-color: #ffffff;
+            border-radius: 3px;
+        }
+        .emoji {
+            font-size: 16px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 LibreChat转发日志测试</h1>
+        
+        <div class="info test-item">
+            <strong>功能说明：</strong><br>
+            现在已经为所有AI模型添加了详细的转发日志，你可以在服务器日志中看到完整的请求转发过程。
+        </div>
+
+        <div class="log-section">
+            <div class="log-title">📋 日志类型说明</div>
+            
+            <div class="log-item">
+                <span class="emoji">🚀</span><strong>[OpenAI转发配置]</strong> - 客户端初始化时的配置信息
+            </div>
+            
+            <div class="log-item">
+                <span class="emoji">📤</span><strong>[OpenAI转发配置]</strong> - 客户端选项详情
+            </div>
+            
+            <div class="log-item">
+                <span class="emoji">🌐</span><strong>[OpenAI请求转发]</strong> - 准备发送请求的详细信息
+            </div>
+            
+            <div class="log-item">
+                <span class="emoji">💬</span><strong>[OpenAI请求转发]</strong> - 消息内容（脱敏处理）
+            </div>
+            
+            <div class="log-item">
+                <span class="emoji">🔧</span><strong>[OpenAI客户端创建]</strong> - OpenAI客户端创建参数
+            </div>
+            
+            <div class="log-item">
+                <span class="emoji">📡</span><strong>[OpenAI请求发送]</strong> - 即将发送到上游服务
+            </div>
+            
+            <div class="log-item">
+                <span class="emoji">🌊</span><strong>[OpenAI流式请求]</strong> - 流式请求的详细信息
+            </div>
+            
+            <div class="log-item">
+                <span class="emoji">✅</span><strong>[OpenAI响应接收]</strong> - 收到上游服务响应
+            </div>
+            
+            <div class="log-item">
+                <span class="emoji">❌</span><strong>[OpenAI请求失败]</strong> - 请求失败时的错误信息
+            </div>
+            
+            <div class="log-item">
+                <span class="emoji">🚀</span><strong>[Anthropic转发配置]</strong> - Anthropic客户端配置
+            </div>
+            
+            <div class="log-item">
+                <span class="emoji">📡</span><strong>[Anthropic请求发送]</strong> - Anthropic请求详情
+            </div>
+            
+            <div class="log-item">
+                <span class="emoji">✅</span><strong>[Anthropic响应接收]</strong> - Anthropic响应信息
+            </div>
+        </div>
+
+        <div id="results"></div>
+
+        <button onclick="setupAndTest()">设置用户并开始测试</button>
+        <button onclick="showLogInstructions()" class="secondary">查看日志说明</button>
+
+        <div style="margin-top: 20px;">
+            <h3>🔍 如何查看转发日志：</h3>
+            <ol>
+                <li><strong>启动LibreChat服务</strong>：确保服务正在运行</li>
+                <li><strong>查看服务器日志</strong>：
+                    <ul>
+                        <li>如果使用Docker：<code>docker logs librechat</code></li>
+                        <li>如果直接运行：查看控制台输出</li>
+                        <li>如果使用PM2：<code>pm2 logs</code></li>
+                    </ul>
+                </li>
+                <li><strong>登录并发送消息</strong>：使用外部认证登录并发送AI消息</li>
+                <li><strong>观察日志输出</strong>：在日志中查找带有emoji的转发日志</li>
+            </ol>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h3>📊 日志包含的信息：</h3>
+            <div class="log-section">
+                <div class="log-title">请求信息</div>
+                <ul>
+                    <li>目标URL（应该是 https://api-dev.718ai.cn/v1/...）</li>
+                    <li>使用的模型名称</li>
+                    <li>API Key前缀（脱敏显示）</li>
+                    <li>请求参数（温度、最大token等）</li>
+                    <li>消息数量和内容预览</li>
+                    <li>用户ID和时间戳</li>
+                </ul>
+                
+                <div class="log-title">响应信息</div>
+                <ul>
+                    <li>响应时间</li>
+                    <li>返回的模型信息</li>
+                    <li>Token使用情况</li>
+                    <li>错误信息（如果有）</li>
+                    <li>流式响应的处理状态</li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h3>⚠️ 注意事项：</h3>
+            <div class="warning test-item">
+                <ul>
+                    <li>日志中的API Key已经脱敏处理，只显示前10个字符</li>
+                    <li>消息内容只显示前100个字符的预览</li>
+                    <li>所有敏感信息都经过了安全处理</li>
+                    <li>日志级别设置为INFO，确保能看到转发日志</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addResult(title, message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const resultItem = document.createElement('div');
+            resultItem.className = `test-item ${type}`;
+            resultItem.innerHTML = `<strong>${title}</strong><br>${message}`;
+            resultsDiv.appendChild(resultItem);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        function setupAndTest() {
+            clearResults();
+            addResult('开始测试', '正在设置测试用户...', 'info');
+            
+            // 设置测试用户信息
+            const userData = {
+                email: "log-test@company.com",
+                name: "日志测试用户",
+                username: "logtest",
+                role: "USER"
+            };
+            
+            localStorage.setItem('external_user_data', JSON.stringify(userData));
+            addResult('用户设置', '✅ 测试用户信息已设置', 'success');
+            
+            addResult('下一步', '即将跳转到LibreChat，请同时查看服务器日志输出', 'warning');
+            addResult('日志提示', '发送消息后，在服务器日志中查找带有🚀📡✅❌等emoji的转发日志', 'info');
+            
+            setTimeout(() => {
+                window.location.href = 'http://localhost:3080';
+            }, 3000);
+        }
+
+        function showLogInstructions() {
+            clearResults();
+            addResult('日志查看指令', '根据你的部署方式选择对应的命令：', 'info');
+            addResult('Docker部署', 'docker logs -f librechat', 'info');
+            addResult('直接运行', '查看启动LibreChat时的控制台输出', 'info');
+            addResult('PM2部署', 'pm2 logs librechat', 'info');
+            addResult('开发模式', 'npm run dev 的控制台输出', 'info');
+        }
+
+        // 页面加载时显示说明
+        window.onload = function() {
+            addResult('准备就绪', '点击"设置用户并开始测试"按钮开始测试转发日志功能', 'info');
+        };
+    </script>
+</body>
+</html>

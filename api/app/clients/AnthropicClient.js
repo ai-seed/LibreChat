@@ -199,6 +199,11 @@ class AnthropicClient extends BaseClient {
 
     if (this.options.reverseProxyUrl) {
       options.baseURL = this.options.reverseProxyUrl;
+      logger.info('🚀 [Anthropic转发配置] 使用自定义baseURL', {
+        baseURL: options.baseURL,
+        apiKeyPrefix: this.apiKey ? `${this.apiKey.substring(0, 10)}...` : 'undefined',
+        timestamp: new Date().toISOString()
+      });
     }
 
     const headers = getClaudeHeaders(requestOptions?.model, this.supportsCacheControl);
@@ -695,9 +700,47 @@ class AnthropicClient extends BaseClient {
    * @returns {Promise<Anthropic.default.Message | Anthropic.default.Completion>} The response from the Anthropic client.
    */
   async createResponse(client, options, useMessages) {
-    return (useMessages ?? this.useMessages)
-      ? await client.messages.create(options)
-      : await client.completions.create(options);
+    const isMessages = useMessages ?? this.useMessages;
+    const endpoint = isMessages ? 'messages' : 'completions';
+
+    logger.info('📡 [Anthropic请求发送] 即将发送到上游服务', {
+      targetURL: `${client.baseURL || 'https://api.anthropic.com'}/${endpoint}`,
+      model: options.model,
+      endpoint: endpoint,
+      maxTokens: options.max_tokens,
+      temperature: options.temperature,
+      stream: options.stream,
+      messageCount: options.messages ? options.messages.length : 0,
+      requestTime: new Date().toISOString()
+    });
+
+    const startTime = Date.now();
+    try {
+      const response = isMessages
+        ? await client.messages.create(options)
+        : await client.completions.create(options);
+
+      const endTime = Date.now();
+      logger.info('✅ [Anthropic响应接收] 收到上游服务响应', {
+        responseTime: `${endTime - startTime}ms`,
+        model: response.model,
+        usage: response.usage,
+        stopReason: response.stop_reason,
+        timestamp: new Date().toISOString()
+      });
+
+      return response;
+    } catch (error) {
+      const endTime = Date.now();
+      logger.error('❌ [Anthropic请求失败] 上游服务返回错误', {
+        error: error.message,
+        status: error.status,
+        type: error.type,
+        responseTime: `${endTime - startTime}ms`,
+        timestamp: new Date().toISOString()
+      });
+      throw error;
+    }
   }
 
   getMessageMapMethod() {

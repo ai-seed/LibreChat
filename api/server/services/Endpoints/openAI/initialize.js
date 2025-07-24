@@ -9,6 +9,7 @@ const {
 } = require('@librechat/api');
 const { getUserKeyValues, checkUserKeyExpiry } = require('~/server/services/UserService');
 const OpenAIClient = require('~/app/clients/OpenAIClient');
+const { logger } = require('~/config');
 
 const initializeClient = async ({
   req,
@@ -61,6 +62,17 @@ const initializeClient = async ({
   let apiKey = credentials[endpoint];
   let baseURL = baseURLOptions[endpoint];
 
+  // 详细的转发日志
+  logger.info('🚀 [OpenAI转发配置] 初始化客户端', {
+    endpoint,
+    modelName,
+    apiKey: apiKey ? `${apiKey.substring(0, 10)}...` : 'undefined',
+    baseURL,
+    userId: req.user?.id,
+    userAgent: req.headers['user-agent'],
+    timestamp: new Date().toISOString()
+  });
+
   let clientOptions = {
     contextStrategy,
     proxy: PROXY ?? null,
@@ -68,6 +80,13 @@ const initializeClient = async ({
     reverseProxyUrl: baseURL ? baseURL : null,
     ...endpointOption,
   };
+
+  logger.info('📤 [OpenAI转发配置] 客户端选项', {
+    reverseProxyUrl: clientOptions.reverseProxyUrl,
+    contextStrategy: clientOptions.contextStrategy,
+    debug: clientOptions.debug,
+    hasProxy: !!clientOptions.proxy
+  });
 
   const isAzureOpenAI = endpoint === EModelEndpoint.azureOpenAI;
   /** @type {false | TAzureConfig} */

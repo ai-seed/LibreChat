@@ -1138,7 +1138,37 @@ ${convo}
       }
 
       const baseURL = extractBaseURL(this.completionsUrl);
-      logger.debug('[OpenAIClient] chatCompletion', { baseURL, modelOptions });
+
+      // 详细的转发日志
+      logger.info('🌐 [OpenAI请求转发] 准备发送请求', {
+        originalUrl: this.completionsUrl,
+        extractedBaseURL: baseURL,
+        model: modelOptions.model,
+        messageCount: modelOptions.messages ? modelOptions.messages.length : 0,
+        hasStream: !!modelOptions.stream,
+        userId: this.user,
+        timestamp: new Date().toISOString()
+      });
+
+      // 记录消息内容（脱敏）
+      if (modelOptions.messages && modelOptions.messages.length > 0) {
+        const sanitizedMessages = modelOptions.messages.map(msg => ({
+          role: msg.role,
+          contentLength: typeof msg.content === 'string' ? msg.content.length :
+                        Array.isArray(msg.content) ? msg.content.length : 0,
+          contentPreview: typeof msg.content === 'string' ?
+                         msg.content.substring(0, 100) + (msg.content.length > 100 ? '...' : '') :
+                         '[复杂内容]'
+        }));
+        logger.info('💬 [OpenAI请求转发] 消息内容', { messages: sanitizedMessages });
+      }
+
+      logger.debug('[OpenAI请求转发] 模型选项详情', {
+        modelOptions: {
+          ...modelOptions,
+          messages: modelOptions.messages ? `[${modelOptions.messages.length} messages]` : undefined
+        }
+      });
       const opts = {
         baseURL,
         fetchOptions: {},
@@ -1233,6 +1263,17 @@ ${convo}
         opts.organization = process.env.OPENAI_ORGANIZATION;
       }
 
+      // 记录OpenAI客户端创建参数
+      logger.info('🔧 [OpenAI客户端创建] 配置参数', {
+        baseURL: opts.baseURL,
+        reverseProxyUrl: this.options.reverseProxyUrl,
+        directEndpoint: this.options.directEndpoint,
+        apiKeyPrefix: this.apiKey ? `${this.apiKey.substring(0, 10)}...` : 'undefined',
+        hasDefaultHeaders: !!opts.defaultHeaders,
+        hasDefaultQuery: !!opts.defaultQuery,
+        organization: opts.organization
+      });
+
       let chatCompletion;
       /** @type {OpenAI} */
       const openai = new OpenAI({
@@ -1243,6 +1284,8 @@ ${convo}
         apiKey: this.apiKey,
         ...opts,
       });
+
+      logger.info('✅ [OpenAI客户端创建] 客户端已创建，准备发送请求');
 
       /* Re-orders system message to the top of the messages payload, as not allowed anywhere else */
       if (modelOptions.messages && (opts.baseURL.includes('api.mistral.ai') || this.isOllama)) {
@@ -1378,12 +1421,31 @@ ${convo}
           ...modelOptions,
           stream: true,
         };
+
+        logger.info('🌊 [OpenAI流式请求] 即将发送流式请求到上游服务', {
+          targetURL: `${opts.baseURL}/chat/completions`,
+          model: params.model,
+          stream: true,
+          maxTokens: params.max_tokens,
+          temperature: params.temperature,
+          requestTime: new Date().toISOString()
+        });
+
+        const streamStartTime = Date.now();
         const stream = await openai.chat.completions
           .stream(params)
           .on('abort', () => {
-            /* Do nothing here */
+            logger.warn('⚠️ [OpenAI流式请求] 请求被中止');
           })
           .on('error', (err) => {
+            const streamEndTime = Date.now();
+            logger.error('❌ [OpenAI流式请求] 流式请求失败', {
+              error: err.message,
+              status: err.status,
+              code: err.code,
+              streamDuration: `${streamEndTime - streamStartTime}ms`,
+              timestamp: new Date().toISOString()
+            });
             handleOpenAIErrors(err, errorCallback, 'stream');
           })
           .on('finalChatCompletion', async (finalChatCompletion) => {
@@ -1453,11 +1515,41 @@ ${convo}
       }
       // regular completion
       else {
+        logger.info('📡 [OpenAI请求发送] 即将发送到上游服务', {
+          targetURL: `${opts.baseURL}/chat/completions`,
+          model: modelOptions.model,
+          stream: modelOptions.stream,
+          maxTokens: modelOptions.max_tokens,
+          temperature: modelOptions.temperature,
+          requestTime: new Date().toISOString()
+        });
+
+        const startTime = Date.now();
         chatCompletion = await openai.chat.completions
           .create({
             ...modelOptions,
           })
+          .then((response) => {
+            const endTime = Date.now();
+            logger.info('✅ [OpenAI响应接收] 收到上游服务响应', {
+              responseTime: `${endTime - startTime}ms`,
+              hasChoices: !!(response && response.choices),
+              choicesCount: response?.choices?.length || 0,
+              model: response?.model,
+              usage: response?.usage,
+              timestamp: new Date().toISOString()
+            });
+            return response;
+          })
           .catch((err) => {
+            const endTime = Date.now();
+            logger.error('❌ [OpenAI请求失败] 上游服务返回错误', {
+              error: err.message,
+              status: err.status,
+              code: err.code,
+              responseTime: `${endTime - startTime}ms`,
+              timestamp: new Date().toISOString()
+            });
             handleOpenAIErrors(err, errorCallback, 'create');
           });
       }
