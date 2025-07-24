@@ -42,17 +42,20 @@ const initializeClient = async ({
     [EModelEndpoint.azureOpenAI]: AZURE_OPENAI_BASEURL,
   };
 
-  const userProvidesKey = isUserProvided(credentials[endpoint]);
-  const userProvidesURL = isUserProvided(baseURLOptions[endpoint]);
+  // 强制使用硬编码的API key和base URL，不允许用户提供
+  const userProvidesKey = false; // 强制为false
+  const userProvidesURL = false; // 强制为false
 
   let userValues = null;
-  if (expiresAt && (userProvidesKey || userProvidesURL)) {
-    checkUserKeyExpiry(expiresAt, endpoint);
-    userValues = await getUserKeyValues({ userId: req.user.id, name: endpoint });
-  }
+  // 注释掉用户key验证逻辑
+  // if (expiresAt && (userProvidesKey || userProvidesURL)) {
+  //   checkUserKeyExpiry(expiresAt, endpoint);
+  //   userValues = await getUserKeyValues({ userId: req.user.id, name: endpoint });
+  // }
 
-  let apiKey = userProvidesKey ? userValues?.apiKey : credentials[endpoint];
-  let baseURL = userProvidesURL ? userValues?.baseURL : baseURLOptions[endpoint];
+  // 强制使用环境变量中的配置
+  let apiKey = credentials[endpoint];
+  let baseURL = baseURLOptions[endpoint];
 
   let clientOptions = {
     contextStrategy,

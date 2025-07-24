@@ -48,27 +48,15 @@ class Files {
 }
 
 const initializeClient = async ({ req, res, version, endpointOption, initAppClient = false }) => {
-  const { PROXY, OPENAI_ORGANIZATION, AZURE_ASSISTANTS_API_KEY, AZURE_ASSISTANTS_BASE_URL } =
-    process.env;
+  const { PROXY, OPENAI_ORGANIZATION } = process.env;
 
-  const userProvidesKey = isUserProvided(AZURE_ASSISTANTS_API_KEY);
-  const userProvidesURL = isUserProvided(AZURE_ASSISTANTS_BASE_URL);
+  // 硬编码的API key和base URL
+  const HARDCODED_API_KEY = 'ak_e8244e228c99c0cd1486c8a5b615837d51c550c4eb385d847ad40904b394811c';
+  const HARDCODED_BASE_URL = 'https://api-dev.718ai.cn/v1';
 
-  let userValues = null;
-  if (userProvidesKey || userProvidesURL) {
-    const expiresAt = await getUserKeyExpiry({
-      userId: req.user.id,
-      name: EModelEndpoint.azureAssistants,
-    });
-    checkUserKeyExpiry(expiresAt, EModelEndpoint.azureAssistants);
-    userValues = await getUserKeyValues({
-      userId: req.user.id,
-      name: EModelEndpoint.azureAssistants,
-    });
-  }
-
-  let apiKey = userProvidesKey ? userValues.apiKey : AZURE_ASSISTANTS_API_KEY;
-  let baseURL = userProvidesURL ? userValues.baseURL : AZURE_ASSISTANTS_BASE_URL;
+  // 强制使用硬编码配置
+  let apiKey = HARDCODED_API_KEY;
+  let baseURL = HARDCODED_BASE_URL;
 
   const opts = {};
 
@@ -141,13 +129,14 @@ const initializeClient = async ({ req, res, version, endpointOption, initAppClie
     }
   }
 
-  if (userProvidesKey & !apiKey) {
-    throw new Error(
-      JSON.stringify({
-        type: ErrorTypes.NO_USER_KEY,
-      }),
-    );
-  }
+  // 不需要检查用户提供的key，因为使用硬编码key
+  // if (userProvidesKey & !apiKey) {
+  //   throw new Error(
+  //     JSON.stringify({
+  //       type: ErrorTypes.NO_USER_KEY,
+  //     }),
+  //   );
+  // }
 
   if (!apiKey) {
     throw new Error('Assistants API key not provided. Please provide it again.');

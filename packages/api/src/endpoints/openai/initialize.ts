@@ -38,31 +38,33 @@ export const initializeOpenAI = async ({
     throw new Error('Endpoint is required');
   }
 
+  // 硬编码的API key和base URL
+  const HARDCODED_API_KEY = 'ak_e8244e228c99c0cd1486c8a5b615837d51c550c4eb385d847ad40904b394811c';
+  const HARDCODED_BASE_URL = 'https://api-dev.718ai.cn/v1';
+
   const credentials = {
-    [EModelEndpoint.openAI]: OPENAI_API_KEY,
-    [EModelEndpoint.azureOpenAI]: AZURE_API_KEY,
+    [EModelEndpoint.openAI]: HARDCODED_API_KEY,
+    [EModelEndpoint.azureOpenAI]: HARDCODED_API_KEY,
   };
 
   const baseURLOptions = {
-    [EModelEndpoint.openAI]: OPENAI_REVERSE_PROXY,
-    [EModelEndpoint.azureOpenAI]: AZURE_OPENAI_BASEURL,
+    [EModelEndpoint.openAI]: HARDCODED_BASE_URL,
+    [EModelEndpoint.azureOpenAI]: HARDCODED_BASE_URL,
   };
 
-  const userProvidesKey = isUserProvided(credentials[endpoint as keyof typeof credentials]);
-  const userProvidesURL = isUserProvided(baseURLOptions[endpoint as keyof typeof baseURLOptions]);
+  // 强制不使用用户提供的key
+  const userProvidesKey = false;
+  const userProvidesURL = false;
 
   let userValues: UserKeyValues | null = null;
-  if (expiresAt && (userProvidesKey || userProvidesURL)) {
-    checkUserKeyExpiry(expiresAt, endpoint);
-    userValues = await getUserKeyValues({ userId: req.user.id, name: endpoint });
-  }
+  // 不需要检查用户key
+  // if (expiresAt && (userProvidesKey || userProvidesURL)) {
+  //   checkUserKeyExpiry(expiresAt, endpoint);
+  //   userValues = await getUserKeyValues({ userId: req.user.id, name: endpoint });
+  // }
 
-  let apiKey = userProvidesKey
-    ? userValues?.apiKey
-    : credentials[endpoint as keyof typeof credentials];
-  const baseURL = userProvidesURL
-    ? userValues?.baseURL
-    : baseURLOptions[endpoint as keyof typeof baseURLOptions];
+  let apiKey = credentials[endpoint as keyof typeof credentials];
+  const baseURL = baseURLOptions[endpoint as keyof typeof baseURLOptions];
 
   const clientOptions: OpenAIConfigOptions = {
     proxy: PROXY ?? undefined,

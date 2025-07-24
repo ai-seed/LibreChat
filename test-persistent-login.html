@@ -150,7 +150,23 @@
                 <li><strong>刷新测试</strong>：在LibreChat页面按F5刷新，应该保持登录状态</li>
                 <li><strong>关闭重开</strong>：关闭浏览器标签页，重新打开LibreChat，应该自动登录</li>
                 <li><strong>主动登出</strong>：在LibreChat中点击登出，用户信息会被清除</li>
+                <li><strong>API配置验证</strong>：登录后应该可以直接使用AI模型，无需配置API key</li>
             </ol>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h3>API配置信息：</h3>
+            <div class="info">
+                <strong>API Key:</strong> ak_e8244e228c99c0cd1486c8a5b615837d51c550c4eb385d847ad40904b394811c (已硬编码)<br>
+                <strong>Base URL:</strong> https://api-dev.718ai.cn/v1 (已硬编码)<br>
+                <strong>支持的模型端点:</strong><br>
+                • OpenAI (GPT系列模型)<br>
+                • Anthropic (Claude系列模型)<br>
+                • Google (Gemini系列模型)<br>
+                • Azure OpenAI<br>
+                • Assistants API<br>
+                <strong>说明:</strong> 所有AI模型都使用相同的API key和base URL，用户无需在界面中配置
+            </div>
         </div>
 
         <div id="status"></div>

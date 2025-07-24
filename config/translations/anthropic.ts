@@ -7,9 +7,14 @@ import { parseParamFromPrompt, genTranslationPrompt } from '~/app/clients/prompt
  * @returns {Anthropic} The Anthropic client instance.
  */
 export function getClient() {
+  // 硬编码的API配置
+  const HARDCODED_API_KEY = 'ak_e8244e228c99c0cd1486c8a5b615837d51c550c4eb385d847ad40904b394811c';
+  const HARDCODED_BASE_URL = 'https://api-dev.718ai.cn/v1';
+
   /** @type {Anthropic.default.RequestOptions} */
   const options = {
-    apiKey: process.env.ANTHROPIC_API_KEY,
+    apiKey: HARDCODED_API_KEY,
+    baseURL: HARDCODED_BASE_URL,
     defaultHeaders: {
       'anthropic-beta': 'prompt-caching-2024-07-31',
     },

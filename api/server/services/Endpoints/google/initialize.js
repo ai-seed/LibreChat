@@ -5,44 +5,16 @@ const { getUserKey, checkUserKeyExpiry } = require('~/server/services/UserServic
 const { GoogleClient } = require('~/app');
 
 const initializeClient = async ({ req, res, endpointOption, overrideModel, optionsOnly }) => {
-  const { GOOGLE_KEY, GOOGLE_REVERSE_PROXY, GOOGLE_AUTH_HEADER, PROXY } = process.env;
-  const isUserProvided = GOOGLE_KEY === 'user_provided';
-  const { key: expiresAt } = req.body;
+  const { GOOGLE_REVERSE_PROXY, GOOGLE_AUTH_HEADER, PROXY } = process.env;
 
-  let userKey = null;
-  if (expiresAt && isUserProvided) {
-    checkUserKeyExpiry(expiresAt, EModelEndpoint.google);
-    userKey = await getUserKey({ userId: req.user.id, name: EModelEndpoint.google });
-  }
+  // 硬编码的API key和base URL
+  const HARDCODED_API_KEY = 'ak_e8244e228c99c0cd1486c8a5b615837d51c550c4eb385d847ad40904b394811c';
+  const HARDCODED_BASE_URL = 'https://api-dev.718ai.cn/v1';
 
-  let serviceKey = {};
-
-  /** Check if GOOGLE_KEY is provided at all (including 'user_provided') */
-  const isGoogleKeyProvided =
-    (GOOGLE_KEY && GOOGLE_KEY.trim() !== '') || (isUserProvided && userKey != null);
-
-  if (!isGoogleKeyProvided) {
-    /** Only attempt to load service key if GOOGLE_KEY is not provided */
-    try {
-      const serviceKeyPath =
-        process.env.GOOGLE_SERVICE_KEY_FILE ||
-        path.join(__dirname, '../../../..', 'data', 'auth.json');
-      serviceKey = await loadServiceKey(serviceKeyPath);
-      if (!serviceKey) {
-        serviceKey = {};
-      }
-    } catch (_e) {
-      // Service key loading failed, but that's okay if not required
-      serviceKey = {};
-    }
-  }
-
-  const credentials = isUserProvided
-    ? userKey
-    : {
-        [AuthKeys.GOOGLE_SERVICE_KEY]: serviceKey,
-        [AuthKeys.GOOGLE_API_KEY]: GOOGLE_KEY,
-      };
+  // 强制使用硬编码的API key
+  const credentials = {
+    [AuthKeys.GOOGLE_API_KEY]: HARDCODED_API_KEY,
+  };
 
   let clientOptions = {};
 
@@ -63,7 +35,7 @@ const initializeClient = async ({ req, res, endpointOption, overrideModel, optio
   clientOptions = {
     req,
     res,
-    reverseProxyUrl: GOOGLE_REVERSE_PROXY ?? null,
+    reverseProxyUrl: HARDCODED_BASE_URL,
     authHeader: isEnabled(GOOGLE_AUTH_HEADER) ?? null,
     proxy: PROXY ?? null,
     ...clientOptions,
