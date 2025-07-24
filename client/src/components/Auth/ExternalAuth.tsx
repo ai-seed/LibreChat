@@ -68,8 +68,8 @@ const ExternalAuth = () => {
           redirect: '/c/new'
         });
 
-        // 清除localStorage中的临时用户数据（安全考虑）
-        localStorage.removeItem('external_user_data');
+        // 保留localStorage中的用户数据，以便刷新时重新认证
+        // localStorage.removeItem('external_user_data'); // 不删除，保持持久登录
 
         // 清除URL参数中的用户数据（安全考虑）
         if (searchParams.get('userData')) {

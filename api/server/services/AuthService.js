@@ -22,7 +22,6 @@ const {
 } = require('~/models');
 const { isEmailDomainAllowed } = require('~/server/services/domains');
 const { checkEmailConfig, sendEmail } = require('~/server/utils');
-const { getBalanceConfig } = require('~/server/services/Config');
 const { registerSchema } = require('~/strategies/validators');
 
 const domains = {
@@ -219,9 +218,8 @@ const registerUser = async (user, additionalData = {}) => {
 
     const emailEnabled = checkEmailConfig();
     const disableTTL = isEnabled(process.env.ALLOW_UNVERIFIED_EMAIL_LOGIN);
-    const balanceConfig = await getBalanceConfig();
 
-    const newUser = await createUser(newUserData, balanceConfig, disableTTL, true);
+    const newUser = await createUser(newUserData, null, disableTTL, true);
     newUserId = newUser._id;
     if (emailEnabled && !newUser.emailVerified) {
       await sendVerificationEmail({
@@ -579,9 +577,8 @@ const authenticateExternalUser = async (externalUserData, res) => {
         // 不设置密码，因为是外部认证
       };
 
-      const balanceConfig = await getBalanceConfig();
-      // 确保为新用户创建Balance记录
-      user = await createUser(newUserData, balanceConfig, true, false);
+      // 创建用户时不需要余额配置
+      user = await createUser(newUserData, null, true, false);
 
       logger.info(`[authenticateExternalUser] User created successfully [Email: ${email}] [ID: ${user._id}]`);
     }

@@ -120,6 +120,8 @@ const AuthContextProvider = ({
       if (redirect) {
         logoutRedirectRef.current = redirect;
       }
+      // 清除外部用户数据
+      localStorage.removeItem('external_user_data');
       logoutUser.mutate(undefined);
     },
     [logoutUser],
@@ -166,17 +168,20 @@ const AuthContextProvider = ({
           isAuthenticated: true,
           user: data.user,
         });
-        // 清除localStorage中的临时数据
-        localStorage.removeItem('external_user_data');
+        // 保留localStorage中的用户数据，以便刷新时重新认证
+        // localStorage.removeItem('external_user_data'); // 不删除，保持持久登录
         return true;
       } else {
         console.error('External authentication failed:', data.message);
-        localStorage.removeItem('external_user_data');
+        // 只有在认证失败时才清除数据，避免临时网络问题导致数据丢失
+        if (data.message && data.message.includes('Invalid') || data.message.includes('required')) {
+          localStorage.removeItem('external_user_data');
+        }
         return false;
       }
     } catch (error) {
       console.error('External authentication error:', error);
-      localStorage.removeItem('external_user_data');
+      // 网络错误不清除数据，可能是临时问题
       return false;
     }
   }, [setUserContext]);
@@ -266,6 +271,12 @@ const AuthContextProvider = ({
     };
   }, [setUserContext, user]);
 
+  // 清除外部用户数据的方法
+  const clearExternalUserData = useCallback(() => {
+    localStorage.removeItem('external_user_data');
+    console.log('External user data cleared from localStorage');
+  }, []);
+
   // Make the provider update only when it should
   const memoedValue = useMemo(
     () => ({
@@ -276,6 +287,7 @@ const AuthContextProvider = ({
       logout,
       setError,
       setUserContext,
+      clearExternalUserData,
       roles: {
         [SystemRoles.USER]: userRole,
         [SystemRoles.ADMIN]: adminRole,
@@ -283,7 +295,7 @@ const AuthContextProvider = ({
       isAuthenticated,
     }),
 
-    [user, error, isAuthenticated, token, userRole, adminRole, setUserContext],
+    [user, error, isAuthenticated, token, userRole, adminRole, setUserContext, clearExternalUserData],
   );
 
   return <AuthContext.Provider value={memoedValue}>{children}</AuthContext.Provider>;

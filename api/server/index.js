@@ -105,7 +105,7 @@ const startServer = async () => {
   app.use('/api/categories', routes.categories);
   app.use('/api/tokenizer', routes.tokenizer);
   app.use('/api/endpoints', routes.endpoints);
-  app.use('/api/balance', routes.balance);
+  // app.use('/api/balance', routes.balance); // 已禁用余额功能
   app.use('/api/models', routes.models);
   app.use('/api/plugins', routes.plugins);
   app.use('/api/config', routes.config);
