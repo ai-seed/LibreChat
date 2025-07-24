@@ -1034,13 +1034,21 @@ class AgentClient extends BaseClient {
       );
       // 为agents提供硬编码的配置
       const hardcodedConfig = {
+        type: endpoint,
         apiKey: 'ak_e8244e228c99c0cd1486c8a5b615837d51c550c4eb385d847ad40904b394811c',
         baseURL: 'https://api-dev.718ai.cn/v1',
         models: {
           default: ['gpt-3.5-turbo', 'gpt-4', 'gpt-4o'],
-        }
+        },
+        titleConvo: true,
+        titleModel: 'gpt-3.5-turbo'
       };
       logger.info('[api/server/controllers/agents/client.js #titleConvo] Using hardcoded config for agents', hardcodedConfig);
+
+      // 将硬编码配置设置到req.app.locals中
+      if (!req.app.locals[endpoint]) {
+        req.app.locals[endpoint] = hardcodedConfig;
+      }
     }
 
     if (endpointConfig?.titleEndpoint && endpointConfig.titleEndpoint !== endpoint) {

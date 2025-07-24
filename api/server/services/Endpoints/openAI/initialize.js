@@ -85,7 +85,16 @@ const initializeClient = async ({
     reverseProxyUrl: clientOptions.reverseProxyUrl,
     contextStrategy: clientOptions.contextStrategy,
     debug: clientOptions.debug,
-    hasProxy: !!clientOptions.proxy
+    hasProxy: !!clientOptions.proxy,
+    endpoint,
+    modelName
+  });
+
+  logger.info('🎯 [OpenAI转发验证] 关键配置确认', {
+    targetBaseURL: baseURL,
+    expectedURL: 'https://api-dev.718ai.cn/v1',
+    isCorrectURL: baseURL === 'https://api-dev.718ai.cn/v1',
+    apiKeyPrefix: apiKey ? `${apiKey.substring(0, 15)}...` : 'undefined'
   });
 
   const isAzureOpenAI = endpoint === EModelEndpoint.azureOpenAI;
