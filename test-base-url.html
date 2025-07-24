@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试Base URL配置</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #e7f3ff;
+            border-color: #b3d9ff;
+            color: #0c5460;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .secondary {
+            background-color: #008CBA;
+        }
+        .secondary:hover {
+            background-color: #007B9A;
+        }
+        .code {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>测试Base URL配置</h1>
+        
+        <div class="info test-item">
+            <strong>测试目标：</strong><br>
+            验证所有AI模型是否正确使用硬编码的base URL: https://api-dev.718ai.cn/v1
+        </div>
+
+        <div id="results"></div>
+
+        <button onclick="setupUserAndTest()">设置用户并测试对话</button>
+        <button onclick="testChatCompletion()" class="secondary">直接测试聊天完成</button>
+        <button onclick="checkNetworkRequests()" class="secondary">检查网络请求</button>
+
+        <div style="margin-top: 20px;">
+            <h3>测试步骤：</h3>
+            <ol>
+                <li><strong>设置用户信息</strong>：自动设置测试用户信息</li>
+                <li><strong>发起对话</strong>：向AI模型发送测试消息</li>
+                <li><strong>监控网络</strong>：检查请求是否发送到正确的base URL</li>
+                <li><strong>验证响应</strong>：确认收到来自中转服务的响应</li>
+            </ol>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h3>预期结果：</h3>
+            <div class="info">
+                <strong>正确的请求URL:</strong> https://api-dev.718ai.cn/v1/chat/completions<br>
+                <strong>错误的请求URL:</strong> https://api.openai.com/v1/chat/completions<br>
+                <strong>验证方法:</strong> 打开浏览器开发者工具的Network标签页监控请求<br>
+                <strong>配置说明:</strong> baseURL设置为 https://api-dev.718ai.cn/v1，SDK会自动添加具体的endpoint路径
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h3>手动验证方法：</h3>
+            <div class="code">
+1. 打开浏览器开发者工具 (F12)
+2. 切换到 Network 标签页
+3. 设置用户信息并登录LibreChat
+4. 发送一条消息给AI
+5. 在Network标签页中查找chat/completions请求
+6. 检查请求的URL是否为: https://api-dev.718ai.cn/v1/chat/completions
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addResult(title, message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const resultItem = document.createElement('div');
+            resultItem.className = `test-item ${type}`;
+            resultItem.innerHTML = `<strong>${title}</strong><br>${message}`;
+            resultsDiv.appendChild(resultItem);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function setupUserAndTest() {
+            clearResults();
+            addResult('开始测试', '正在设置用户信息...', 'info');
+            
+            // 设置测试用户信息
+            const userData = {
+                email: "test-baseurl@company.com",
+                name: "Base URL测试用户",
+                username: "baseurltest",
+                role: "USER"
+            };
+            
+            localStorage.setItem('external_user_data', JSON.stringify(userData));
+            addResult('用户设置', '✅ 测试用户信息已设置', 'success');
+            
+            // 跳转到LibreChat
+            addResult('跳转提示', '即将跳转到LibreChat，请在开发者工具中监控网络请求', 'warning');
+            
+            setTimeout(() => {
+                window.location.href = 'http://localhost:3080';
+            }, 3000);
+        }
+
+        async function testChatCompletion() {
+            addResult('测试聊天完成', '正在测试聊天完成API...', 'info');
+            
+            try {
+                // 这个测试需要用户已经登录
+                const response = await fetch('/api/ask/openAI', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        text: "Hello, this is a test message to verify base URL configuration.",
+                        parentMessageId: "test-" + Date.now(),
+                        conversationId: null,
+                        model: "gpt-3.5-turbo",
+                        endpoint: "openAI"
+                    }),
+                });
+                
+                if (response.ok) {
+                    addResult('聊天测试', '✅ 聊天API调用成功，请检查Network标签页确认请求URL', 'success');
+                } else if (response.status === 401) {
+                    addResult('聊天测试', '❌ 需要先登录，请使用"设置用户并测试对话"按钮', 'warning');
+                } else {
+                    addResult('聊天测试', `❌ API调用失败 (状态: ${response.status})`, 'error');
+                }
+            } catch (error) {
+                addResult('聊天测试', `❌ 网络错误: ${error.message}`, 'error');
+            }
+        }
+
+        function checkNetworkRequests() {
+            addResult('网络监控', '请按以下步骤检查网络请求:', 'info');
+            addResult('步骤1', '打开开发者工具 (F12)', 'info');
+            addResult('步骤2', '切换到Network标签页', 'info');
+            addResult('步骤3', '清除现有请求记录', 'info');
+            addResult('步骤4', '在LibreChat中发送消息', 'info');
+            addResult('步骤5', '查找包含"chat/completions"的请求', 'info');
+            addResult('步骤6', '验证请求URL是否为: https://api-dev.718ai.cn/v1/chat/completions', 'warning');
+        }
+
+        // 页面加载时显示说明
+        window.onload = function() {
+            addResult('准备就绪', '点击"设置用户并测试对话"开始测试base URL配置', 'info');
+            
+            // 检查是否有现有用户数据
+            const stored = localStorage.getItem('external_user_data');
+            if (stored) {
+                try {
+                    const data = JSON.parse(stored);
+                    addResult('现有用户', `检测到用户数据: ${data.name} (${data.email})`, 'success');
+                } catch (e) {
+                    // 忽略解析错误
+                }
+            }
+        };
+    </script>
+</body>
+</html>

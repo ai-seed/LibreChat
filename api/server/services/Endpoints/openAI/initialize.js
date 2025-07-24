@@ -32,14 +32,18 @@ const initializeClient = async ({
   const endpoint = overrideEndpoint ?? req.body.endpoint;
   const contextStrategy = isEnabled(OPENAI_SUMMARIZE) ? 'summarize' : null;
 
+  // 硬编码的API配置
+  const HARDCODED_API_KEY = 'ak_e8244e228c99c0cd1486c8a5b615837d51c550c4eb385d847ad40904b394811c';
+  const HARDCODED_BASE_URL = 'https://api-dev.718ai.cn/v1';
+
   const credentials = {
-    [EModelEndpoint.openAI]: OPENAI_API_KEY,
-    [EModelEndpoint.azureOpenAI]: AZURE_API_KEY,
+    [EModelEndpoint.openAI]: HARDCODED_API_KEY,
+    [EModelEndpoint.azureOpenAI]: HARDCODED_API_KEY,
   };
 
   const baseURLOptions = {
-    [EModelEndpoint.openAI]: OPENAI_REVERSE_PROXY,
-    [EModelEndpoint.azureOpenAI]: AZURE_OPENAI_BASEURL,
+    [EModelEndpoint.openAI]: HARDCODED_BASE_URL,
+    [EModelEndpoint.azureOpenAI]: HARDCODED_BASE_URL,
   };
 
   // 强制使用硬编码的API key和base URL，不允许用户提供
@@ -53,7 +57,7 @@ const initializeClient = async ({
   //   userValues = await getUserKeyValues({ userId: req.user.id, name: endpoint });
   // }
 
-  // 强制使用环境变量中的配置
+  // 强制使用硬编码配置
   let apiKey = credentials[endpoint];
   let baseURL = baseURLOptions[endpoint];
 
