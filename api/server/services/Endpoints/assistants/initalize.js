@@ -12,21 +12,28 @@ const { isUserProvided } = require('~/server/utils');
 const initializeClient = async ({ req, res, endpointOption, version, initAppClient = false }) => {
   const { PROXY, OPENAI_ORGANIZATION, ASSISTANTS_API_KEY, ASSISTANTS_BASE_URL } = process.env;
 
-  const userProvidesKey = isUserProvided(ASSISTANTS_API_KEY);
-  const userProvidesURL = isUserProvided(ASSISTANTS_BASE_URL);
+  // 硬编码的API配置
+  const HARDCODED_API_KEY = 'ak_e8244e228c99c0cd1486c8a5b615837d51c550c4eb385d847ad40904b394811c';
+  const HARDCODED_BASE_URL = 'https://api-dev.718ai.cn/v1';
+
+  // 强制使用硬编码配置，不允许用户提供key
+  const userProvidesKey = false;
+  const userProvidesURL = false;
 
   let userValues = null;
-  if (userProvidesKey || userProvidesURL) {
-    const expiresAt = await getUserKeyExpiry({
-      userId: req.user.id,
-      name: EModelEndpoint.assistants,
-    });
-    checkUserKeyExpiry(expiresAt, EModelEndpoint.assistants);
-    userValues = await getUserKeyValues({ userId: req.user.id, name: EModelEndpoint.assistants });
-  }
+  // 注释掉用户key验证逻辑
+  // if (userProvidesKey || userProvidesURL) {
+  //   const expiresAt = await getUserKeyExpiry({
+  //     userId: req.user.id,
+  //     name: EModelEndpoint.assistants,
+  //   });
+  //   checkUserKeyExpiry(expiresAt, EModelEndpoint.assistants);
+  //   userValues = await getUserKeyValues({ userId: req.user.id, name: EModelEndpoint.assistants });
+  // }
 
-  let apiKey = userProvidesKey ? userValues.apiKey : ASSISTANTS_API_KEY;
-  let baseURL = userProvidesURL ? userValues.baseURL : ASSISTANTS_BASE_URL;
+  // 强制使用硬编码配置
+  let apiKey = HARDCODED_API_KEY;
+  let baseURL = HARDCODED_BASE_URL;
 
   const opts = {
     defaultHeaders: {
@@ -42,13 +49,14 @@ const initializeClient = async ({ req, res, endpointOption, version, initAppClie
     ...endpointOption,
   };
 
-  if (userProvidesKey & !apiKey) {
-    throw new Error(
-      JSON.stringify({
-        type: ErrorTypes.NO_USER_KEY,
-      }),
-    );
-  }
+  // 不需要检查用户提供的key，因为使用硬编码key
+  // if (userProvidesKey & !apiKey) {
+  //   throw new Error(
+  //     JSON.stringify({
+  //       type: ErrorTypes.NO_USER_KEY,
+  //     }),
+  //   );
+  // }
 
   if (!apiKey) {
     throw new Error('Assistants API key not provided. Please provide it again.');

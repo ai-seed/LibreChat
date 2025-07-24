@@ -1028,9 +1028,19 @@ class AgentClient extends BaseClient {
     const endpointConfig =
       req.app.locals.all ?? req.app.locals[endpoint] ?? titleProviderConfig.customEndpointConfig;
     if (!endpointConfig) {
-      logger.warn(
-        '[api/server/controllers/agents/client.js #titleConvo] Error getting endpoint config',
+      logger.error(
+        '[api/server/controllers/agents/client.js #titleConvo] Error getting custom endpoint config',
+        `Config not found for the ${endpoint} custom endpoint.`
       );
+      // 为agents提供硬编码的配置
+      const hardcodedConfig = {
+        apiKey: 'ak_e8244e228c99c0cd1486c8a5b615837d51c550c4eb385d847ad40904b394811c',
+        baseURL: 'https://api-dev.718ai.cn/v1',
+        models: {
+          default: ['gpt-3.5-turbo', 'gpt-4', 'gpt-4o'],
+        }
+      };
+      logger.info('[api/server/controllers/agents/client.js #titleConvo] Using hardcoded config for agents', hardcodedConfig);
     }
 
     if (endpointConfig?.titleEndpoint && endpointConfig.titleEndpoint !== endpoint) {
