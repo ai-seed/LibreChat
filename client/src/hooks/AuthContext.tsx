@@ -212,6 +212,7 @@ const AuthContextProvider = ({
       login,
       logout,
       setError,
+      setUserContext,
       roles: {
         [SystemRoles.USER]: userRole,
         [SystemRoles.ADMIN]: adminRole,
@@ -219,7 +220,7 @@ const AuthContextProvider = ({
       isAuthenticated,
     }),
 
-    [user, error, isAuthenticated, token, userRole, adminRole],
+    [user, error, isAuthenticated, token, userRole, adminRole, setUserContext],
   );
 
   return <AuthContext.Provider value={memoedValue}>{children}</AuthContext.Provider>;

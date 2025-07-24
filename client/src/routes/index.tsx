@@ -8,6 +8,7 @@ import {
   TwoFactorScreen,
   RequestPasswordReset,
 } from '~/components/Auth';
+import ExternalAuth from '~/components/Auth/ExternalAuth';
 import { OAuthSuccess, OAuthError } from '~/components/OAuth';
 import { AuthContextProvider } from '~/hooks/AuthContext';
 import RouteErrorBoundary from './RouteErrorBoundary';
@@ -85,6 +86,10 @@ export const router = createBrowserRouter([
           {
             path: 'login/2fa',
             element: <TwoFactorScreen />,
+          },
+          {
+            path: 'external-auth',
+            element: <ExternalAuth />,
           },
         ],
       },

@@ -513,6 +513,103 @@ const generateShortLivedToken = (userId, expireIn = '5m') => {
   });
 };
 
+/**
+ * 外部用户认证 - 根据提供的用户信息自动创建或验证用户
+ * @param {Object} externalUserData - 外部系统提供的用户数据
+ * @param {string} externalUserData.email - 用户邮箱（必需，作为唯一标识）
+ * @param {string} externalUserData.name - 用户姓名（必需）
+ * @param {string} [externalUserData.username] - 用户名（可选）
+ * @param {string} [externalUserData.role] - 用户角色（可选，默认为USER）
+ * @param {string} [externalUserData.avatar] - 用户头像URL（可选）
+ * @param {string} [externalUserData.externalId] - 外部系统用户ID（可选）
+ * @param {Object} res - Express response对象
+ * @returns {Promise<{status: number, message: string, user?: Object, token?: string}>}
+ */
+const authenticateExternalUser = async (externalUserData, res) => {
+  try {
+    const {
+      email,
+      name,
+      username,
+      role = SystemRoles.USER,
+      avatar,
+      externalId
+    } = externalUserData;
+
+    // 验证必需字段
+    if (!email || !name) {
+      logger.warn('[authenticateExternalUser] Missing required fields: email or name');
+      return { status: 400, message: 'Email and name are required' };
+    }
+
+    // 查找现有用户（以email为唯一标识）
+    let user = await findUser({ email }, 'email _id name username role avatar provider emailVerified');
+
+    if (user) {
+      // 用户存在，更新用户信息（保持数据同步）
+      logger.info(`[authenticateExternalUser] User exists, updating info [Email: ${email}]`);
+
+      const updateData = {
+        name,
+        role: role || user.role,
+        emailVerified: true,
+      };
+
+      // 只有当新值存在时才更新
+      if (username) updateData.username = username;
+      if (avatar) updateData.avatar = avatar;
+      if (externalId) updateData.externalId = externalId;
+
+      await updateUser(user._id, updateData);
+      user = await getUserById(user._id);
+
+    } else {
+      // 用户不存在，创建新用户
+      logger.info(`[authenticateExternalUser] Creating new user [Email: ${email}]`);
+
+      const newUserData = {
+        provider: 'external',
+        email,
+        username: username || email.split('@')[0], // 如果没有username，使用email前缀
+        name,
+        avatar: avatar || null,
+        role: role,
+        emailVerified: true, // 外部系统用户默认已验证邮箱
+        externalId: externalId || null,
+        // 不设置密码，因为是外部认证
+      };
+
+      const balanceConfig = await getBalanceConfig();
+      user = await createUser(newUserData, balanceConfig, true, false);
+    }
+
+    // 生成认证token
+    const token = await setAuthTokens(user._id, res);
+
+    logger.info(`[authenticateExternalUser] Authentication successful [Email: ${email}] [ID: ${user._id}]`);
+
+    return {
+      status: 200,
+      message: 'Authentication successful',
+      user: {
+        _id: user._id,
+        email: user.email,
+        name: user.name,
+        username: user.username,
+        role: user.role,
+        avatar: user.avatar,
+        provider: user.provider,
+        emailVerified: user.emailVerified,
+      },
+      token
+    };
+
+  } catch (error) {
+    logger.error('[authenticateExternalUser] Error in external user authentication:', error);
+    return { status: 500, message: 'Authentication failed' };
+  }
+};
+
 module.exports = {
   logoutUser,
   verifyEmail,
@@ -523,4 +620,5 @@ module.exports = {
   requestPasswordReset,
   resendVerificationEmail,
   generateShortLivedToken,
+  authenticateExternalUser,
 };

@@ -7,6 +7,7 @@ const {
 } = require('~/server/controllers/AuthController');
 const { loginController } = require('~/server/controllers/auth/LoginController');
 const { logoutController } = require('~/server/controllers/auth/LogoutController');
+const { authenticateExternalUser } = require('~/server/services/AuthService');
 const { verify2FAWithTempToken } = require('~/server/controllers/auth/TwoFactorAuthController');
 const {
   enable2FA,
@@ -61,6 +62,26 @@ router.post(
   resetPasswordRequestController,
 );
 router.post('/resetPassword', checkBan, validatePasswordReset, resetPasswordController);
+
+// 外部用户认证路由
+router.post('/external-auth', checkBan, async (req, res) => {
+  try {
+    const result = await authenticateExternalUser(req.body, res);
+
+    if (result.status === 200) {
+      res.status(200).json({
+        message: result.message,
+        user: result.user,
+        token: result.token
+      });
+    } else {
+      res.status(result.status).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error('[external-auth] Route error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 router.get('/2fa/enable', requireJwtAuth, enable2FA);
 router.post('/2fa/verify', requireJwtAuth, verify2FA);
