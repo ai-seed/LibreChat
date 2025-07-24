@@ -53,6 +53,7 @@ const ExternalAuth = () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // 确保包含cookies
         body: JSON.stringify(userData),
       });
 
@@ -66,6 +67,9 @@ const ExternalAuth = () => {
           user: data.user,
           redirect: '/c/new'
         });
+
+        // 清除localStorage中的临时用户数据（安全考虑）
+        localStorage.removeItem('external_user_data');
 
         // 清除URL参数中的用户数据（安全考虑）
         if (searchParams.get('userData')) {

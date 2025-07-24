@@ -131,6 +131,56 @@ const AuthContextProvider = ({
     loginUser.mutate(data);
   };
 
+  // 检查localStorage中的外部用户数据并自动认证
+  const checkExternalAuth = useCallback(async () => {
+    try {
+      const storedData = localStorage.getItem('external_user_data');
+      if (!storedData) {
+        return false;
+      }
+
+      const userData = JSON.parse(storedData);
+      if (!userData.email || !userData.name) {
+        console.warn('Invalid external user data in localStorage');
+        localStorage.removeItem('external_user_data');
+        return false;
+      }
+
+      console.log('Found external user data, attempting authentication...');
+
+      const response = await fetch('/api/auth/external-auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(userData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log('External authentication successful');
+        setUserContext({
+          token: data.token,
+          isAuthenticated: true,
+          user: data.user,
+        });
+        // 清除localStorage中的临时数据
+        localStorage.removeItem('external_user_data');
+        return true;
+      } else {
+        console.error('External authentication failed:', data.message);
+        localStorage.removeItem('external_user_data');
+        return false;
+      }
+    } catch (error) {
+      console.error('External authentication error:', error);
+      localStorage.removeItem('external_user_data');
+      return false;
+    }
+  }, [setUserContext]);
+
   const silentRefresh = useCallback(() => {
     if (authConfig?.test === true) {
       console.log('Test mode. Skipping silent refresh.');
@@ -149,15 +199,20 @@ const AuthContextProvider = ({
           navigate('/login');
         }
       },
-      onError: (error) => {
+      onError: async (error) => {
         console.log('refreshToken mutation error:', error);
         if (authConfig?.test === true) {
           return;
         }
-        navigate('/login');
+
+        // 如果refresh token失败，尝试外部认证
+        const externalAuthSuccess = await checkExternalAuth();
+        if (!externalAuthSuccess) {
+          navigate('/login');
+        }
       },
     });
-  }, []);
+  }, [checkExternalAuth, navigate]);
 
   useEffect(() => {
     if (userQuery.data) {
@@ -170,7 +225,14 @@ const AuthContextProvider = ({
       doSetError(undefined);
     }
     if (token == null || !token || !isAuthenticated) {
-      silentRefresh();
+      // 首先尝试外部认证，如果失败再尝试silent refresh
+      const tryAuth = async () => {
+        const externalAuthSuccess = await checkExternalAuth();
+        if (!externalAuthSuccess) {
+          silentRefresh();
+        }
+      };
+      tryAuth();
     }
   }, [
     token,
@@ -183,6 +245,7 @@ const AuthContextProvider = ({
     navigate,
     silentRefresh,
     setUserContext,
+    checkExternalAuth,
   ]);
 
   useEffect(() => {

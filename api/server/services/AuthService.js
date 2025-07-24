@@ -580,7 +580,10 @@ const authenticateExternalUser = async (externalUserData, res) => {
       };
 
       const balanceConfig = await getBalanceConfig();
+      // 确保为新用户创建Balance记录
       user = await createUser(newUserData, balanceConfig, true, false);
+
+      logger.info(`[authenticateExternalUser] User created successfully [Email: ${email}] [ID: ${user._id}]`);
     }
 
     // 生成认证token

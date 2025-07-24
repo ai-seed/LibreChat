@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LibreChat 外部认证测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .secondary {
+            background-color: #008CBA;
+        }
+        .secondary:hover {
+            background-color: #007B9A;
+        }
+        .info {
+            background-color: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .code {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LibreChat 外部认证测试工具</h1>
+        
+        <div class="info">
+            <strong>使用说明：</strong><br>
+            1. 填写用户信息（邮箱和姓名为必填项）<br>
+            2. 选择测试方式：localStorage方式或URL参数方式<br>
+            3. 点击对应按钮进行测试<br>
+            4. 系统会自动跳转到LibreChat进行认证
+        </div>
+
+        <form id="userForm">
+            <div class="form-group">
+                <label for="email">邮箱 (必填) *</label>
+                <input type="email" id="email" name="email" required 
+                       placeholder="user@example.com" value="test@company.com">
+            </div>
+
+            <div class="form-group">
+                <label for="name">姓名 (必填) *</label>
+                <input type="text" id="name" name="name" required 
+                       placeholder="张三" value="测试用户">
+            </div>
+
+            <div class="form-group">
+                <label for="username">用户名 (可选)</label>
+                <input type="text" id="username" name="username" 
+                       placeholder="zhangsan" value="testuser">
+            </div>
+
+            <div class="form-group">
+                <label for="role">角色</label>
+                <select id="role" name="role">
+                    <option value="USER">普通用户</option>
+                    <option value="ADMIN">管理员</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="avatar">头像URL (可选)</label>
+                <input type="url" id="avatar" name="avatar" 
+                       placeholder="https://example.com/avatar.jpg">
+            </div>
+
+            <div class="form-group">
+                <label for="externalId">外部系统ID (可选)</label>
+                <input type="text" id="externalId" name="externalId" 
+                       placeholder="emp_12345" value="test_001">
+            </div>
+
+            <div class="form-group">
+                <label for="librechatUrl">LibreChat地址</label>
+                <input type="url" id="librechatUrl" name="librechatUrl" 
+                       value="http://localhost:3080" placeholder="http://localhost:3080">
+            </div>
+        </form>
+
+        <h3>测试方式：</h3>
+        
+        <button onclick="testWithLocalStorage()">
+            方式1: localStorage + 跳转
+        </button>
+        
+        <button onclick="testWithUrlParams()" class="secondary">
+            方式2: URL参数跳转
+        </button>
+
+        <h3>生成的数据预览：</h3>
+        <div class="code" id="dataPreview"></div>
+
+        <h3>调试工具：</h3>
+        <button onclick="checkLocalStorage()">检查localStorage</button>
+        <button onclick="clearLocalStorage()">清除localStorage</button>
+        <button onclick="testDirectApi()">直接测试API</button>
+    </div>
+
+    <script>
+        // 更新数据预览
+        function updatePreview() {
+            const userData = getUserData();
+            document.getElementById('dataPreview').textContent = JSON.stringify(userData, null, 2);
+        }
+
+        // 获取表单数据
+        function getUserData() {
+            return {
+                email: document.getElementById('email').value,
+                name: document.getElementById('name').value,
+                username: document.getElementById('username').value || undefined,
+                role: document.getElementById('role').value,
+                avatar: document.getElementById('avatar').value || undefined,
+                externalId: document.getElementById('externalId').value || undefined
+            };
+        }
+
+        // 方式1: localStorage + 跳转
+        function testWithLocalStorage() {
+            const userData = getUserData();
+            const librechatUrl = document.getElementById('librechatUrl').value;
+            
+            if (!userData.email || !userData.name) {
+                alert('请填写邮箱和姓名！');
+                return;
+            }
+
+            // 存储到localStorage
+            localStorage.setItem('external_user_data', JSON.stringify(userData));
+            
+            // 跳转到外部认证页面
+            window.location.href = `${librechatUrl}/external-auth`;
+        }
+
+        // 方式2: URL参数跳转
+        function testWithUrlParams() {
+            const userData = getUserData();
+            const librechatUrl = document.getElementById('librechatUrl').value;
+            
+            if (!userData.email || !userData.name) {
+                alert('请填写邮箱和姓名！');
+                return;
+            }
+
+            // 编码用户数据
+            const encodedData = encodeURIComponent(JSON.stringify(userData));
+            
+            // 跳转到外部认证页面
+            window.location.href = `${librechatUrl}/external-auth?userData=${encodedData}`;
+        }
+
+        // 检查localStorage
+        function checkLocalStorage() {
+            const stored = localStorage.getItem('external_user_data');
+            if (stored) {
+                alert('localStorage中的数据:\n' + stored);
+            } else {
+                alert('localStorage中没有external_user_data数据');
+            }
+        }
+
+        // 清除localStorage
+        function clearLocalStorage() {
+            localStorage.removeItem('external_user_data');
+            alert('已清除localStorage中的external_user_data');
+        }
+
+        // 直接测试API
+        async function testDirectApi() {
+            const userData = getUserData();
+            const librechatUrl = document.getElementById('librechatUrl').value;
+            
+            if (!userData.email || !userData.name) {
+                alert('请填写邮箱和姓名！');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${librechatUrl}/api/auth/external-auth`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(userData),
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('API测试成功!\n' + JSON.stringify(data, null, 2));
+                } else {
+                    alert('API测试失败:\n' + data.message);
+                }
+            } catch (error) {
+                alert('API测试出错:\n' + error.message);
+            }
+        }
+
+        // 监听表单变化，实时更新预览
+        document.getElementById('userForm').addEventListener('input', updatePreview);
+        
+        // 页面加载时更新预览
+        updatePreview();
+    </script>
+</body>
+</html>
