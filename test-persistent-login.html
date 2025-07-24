@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LibreChat 持久登录测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .secondary {
+            background-color: #008CBA;
+        }
+        .secondary:hover {
+            background-color: #007B9A;
+        }
+        .danger {
+            background-color: #f44336;
+        }
+        .danger:hover {
+            background-color: #da190b;
+        }
+        .info {
+            background-color: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LibreChat 持久登录测试</h1>
+        
+        <div class="info">
+            <strong>功能说明：</strong><br>
+            现在用户信息会保存在localStorage中，刷新页面时会自动重新认证，保持登录状态。
+            只有在主动登出时才会清除用户信息。
+        </div>
+
+        <form id="userForm">
+            <div class="form-group">
+                <label for="email">邮箱 (必填) *</label>
+                <input type="email" id="email" name="email" required 
+                       placeholder="user@example.com" value="test@company.com">
+            </div>
+
+            <div class="form-group">
+                <label for="name">姓名 (必填) *</label>
+                <input type="text" id="name" name="name" required 
+                       placeholder="张三" value="测试用户">
+            </div>
+
+            <div class="form-group">
+                <label for="username">用户名 (可选)</label>
+                <input type="text" id="username" name="username" 
+                       placeholder="zhangsan" value="testuser">
+            </div>
+
+            <div class="form-group">
+                <label for="role">角色</label>
+                <select id="role" name="role">
+                    <option value="USER">普通用户</option>
+                    <option value="ADMIN">管理员</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="librechatUrl">LibreChat地址</label>
+                <input type="url" id="librechatUrl" name="librechatUrl" 
+                       value="http://localhost:3080" placeholder="http://localhost:3080">
+            </div>
+        </form>
+
+        <button onclick="setUserAndLogin()">
+            设置用户信息并登录
+        </button>
+
+        <div style="margin-top: 20px;">
+            <h3>管理工具：</h3>
+            <button onclick="checkStoredData()" class="secondary" style="width: 48%; margin-right: 2%;">
+                检查存储的数据
+            </button>
+            <button onclick="clearStoredData()" class="danger" style="width: 48%;">
+                清除存储的数据
+            </button>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h3>测试步骤：</h3>
+            <ol>
+                <li><strong>设置用户信息</strong>：填写表单并点击"设置用户信息并登录"</li>
+                <li><strong>验证登录</strong>：确认成功跳转到LibreChat并完成登录</li>
+                <li><strong>刷新测试</strong>：在LibreChat页面按F5刷新，应该保持登录状态</li>
+                <li><strong>关闭重开</strong>：关闭浏览器标签页，重新打开LibreChat，应该自动登录</li>
+                <li><strong>主动登出</strong>：在LibreChat中点击登出，用户信息会被清除</li>
+            </ol>
+        </div>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        // 获取表单数据
+        function getUserData() {
+            const data = {
+                email: document.getElementById('email').value,
+                name: document.getElementById('name').value,
+            };
+            
+            // 只添加非空的可选字段
+            const username = document.getElementById('username').value;
+            if (username) data.username = username;
+            
+            const role = document.getElementById('role').value;
+            if (role) data.role = role;
+            
+            return data;
+        }
+
+        // 设置用户信息并登录
+        function setUserAndLogin() {
+            const userData = getUserData();
+            const librechatUrl = document.getElementById('librechatUrl').value;
+            
+            if (!userData.email || !userData.name) {
+                showStatus('请填写邮箱和姓名！', 'warning');
+                return;
+            }
+
+            // 存储到localStorage
+            localStorage.setItem('external_user_data', JSON.stringify(userData));
+            
+            showStatus('用户信息已设置，正在跳转到LibreChat...\n现在刷新页面将保持登录状态！', 'success');
+            
+            // 延迟跳转，让用户看到成功消息
+            setTimeout(() => {
+                window.location.href = librechatUrl;
+            }, 2000);
+        }
+
+        // 检查存储的数据
+        function checkStoredData() {
+            const stored = localStorage.getItem('external_user_data');
+            if (stored) {
+                try {
+                    const data = JSON.parse(stored);
+                    showStatus('localStorage中的用户数据:\n' + JSON.stringify(data, null, 2), 'info');
+                } catch (e) {
+                    showStatus('localStorage数据格式错误: ' + stored, 'warning');
+                }
+            } else {
+                showStatus('localStorage中没有external_user_data数据', 'warning');
+            }
+        }
+
+        // 清除存储的数据
+        function clearStoredData() {
+            localStorage.removeItem('external_user_data');
+            showStatus('已清除localStorage中的external_user_data\n下次访问LibreChat将需要重新设置用户信息', 'success');
+        }
+
+        // 显示状态信息
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.whiteSpace = 'pre-wrap';
+            statusDiv.textContent = message;
+            
+            // 5秒后清除状态
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = '';
+            }, 5000);
+        }
+
+        // 页面加载时检查现有数据
+        window.onload = function() {
+            const stored = localStorage.getItem('external_user_data');
+            if (stored) {
+                try {
+                    const data = JSON.parse(stored);
+                    showStatus(`检测到已保存的用户数据: ${data.name} (${data.email})\n可以直接访问LibreChat进行自动登录`, 'success');
+                    
+                    // 自动填充表单
+                    document.getElementById('email').value = data.email || '';
+                    document.getElementById('name').value = data.name || '';
+                    document.getElementById('username').value = data.username || '';
+                    document.getElementById('role').value = data.role || 'USER';
+                } catch (e) {
+                    showStatus('检测到localStorage中有损坏的数据，建议清除', 'warning');
+                }
+            } else {
+                showStatus('没有检测到保存的用户数据，请填写表单进行设置', 'info');
+            }
+        };
+    </script>
+</body>
+</html>

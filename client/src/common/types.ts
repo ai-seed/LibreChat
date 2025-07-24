@@ -447,6 +447,7 @@ export type TAuthContext = {
   logout: (redirect?: string) => void;
   setError: React.Dispatch<React.SetStateAction<string | undefined>>;
   setUserContext: (userContext: TUserContext) => void;
+  clearExternalUserData: () => void;
   roles?: Record<string, t.TRole | null | undefined>;
 };
 
